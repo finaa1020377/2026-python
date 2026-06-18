@@ -24,9 +24,14 @@ RESULTS_PATH = Path(__file__).with_name("results.json")
 
 
 def make_data(n: int, seed: int = 42) -> list:
-    """產生已排序、無重複的整數 list，固定 seed 以便重現。"""
-    if n < 0:
-        raise ValueError(f"n 必須 >= 0，收到 {n}")
+    """產生已排序、無重複的整數 list，固定 seed 以便重現。
+
+    輸入驗證（OpenSSF 03 Numbers / CWE-20）：明確拒絕非整數或負數的 n，丟出
+    語意清楚的 ValueError，而不是讓 range()/random 拋出語意不清的 TypeError。
+    bool 雖是 int 子類，但當長度用屬語意錯誤，一併擋掉。
+    """
+    if isinstance(n, bool) or not isinstance(n, int) or n < 0:
+        raise ValueError(f"n 必須是 >= 0 的整數，收到 {n!r}")
     rng = random.Random(seed)
     # 從較大的範圍取樣以保證無重複，再排序滿足 binary_search 的前提
     return sorted(rng.sample(range(n * 3 + 1), n))
@@ -116,6 +121,19 @@ def find_crossover(report: dict) -> dict:
             "breakeven_queries": breakeven,
         }
     return crossover
+
+
+def load_results(path=RESULTS_PATH) -> dict:
+    """讀回 results.json。
+
+    安全考量：
+      - 04 Neutralization / CWE-502：一律用 json，不用 pickle——後者在
+        反序列化時會執行任意程式碼，json 只還原資料，安全得多。
+      - 05 Exception Handling / CWE-396：對不存在的檔案，讓 FileNotFoundError
+        自然傳出，不用 bare except 把它吞掉成 None。
+    """
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def main():
