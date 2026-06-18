@@ -10,18 +10,28 @@ binary_search 的前提是 data 已排序，故測試一律使用已排序的 da
 
 import unittest
 
+from benchmark import bisect_search, builtin_in
 from search import binary_search, linear_search, set_search
+
+# 回傳 bool 的函式（其餘回傳 index）
+_BOOL_FUNCS = {set_search, builtin_in}
 
 
 def _found(func, result) -> bool:
     """把不同回傳型別正規化成「是否找到」。"""
-    if func is set_search:
+    if func in _BOOL_FUNCS:
         return result is True
     return result >= 0
 
 
-# 三個搜尋函式放進一個 list，每個測試用 subTest 跑一輪
-SEARCH_FUNCTIONS = [linear_search, binary_search, set_search]
+# Stage 2 三搜 + Stage 3 加速版 baseline 共用同一組正確性測試
+SEARCH_FUNCTIONS = [
+    linear_search,
+    binary_search,
+    set_search,
+    builtin_in,
+    bisect_search,
+]
 
 
 class TestSearchFunctions(unittest.TestCase):
